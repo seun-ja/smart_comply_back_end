@@ -1,9 +1,7 @@
 import json
 
 import redis
-
 from django.conf import settings
-
 
 redis_client = redis.Redis(
     host=settings.REDIS_HOST,
@@ -17,7 +15,6 @@ STREAM_NAME = "transaction-events"
 
 
 class EventPublisher:
-
     @staticmethod
     def transaction_created(transaction):
 

@@ -4,6 +4,9 @@ import os
 
 import django
 import redis
+from django.conf import settings
+
+from rules.services import RiskAnalysisService
 
 os.environ.setdefault(
     "DJANGO_SETTINGS_MODULE",
@@ -11,10 +14,6 @@ os.environ.setdefault(
 )
 
 django.setup()
-
-from django.conf import settings
-
-from rules.services import RiskAnalysisService
 
 redis_client = redis.Redis(
     host=settings.REDIS_HOST,

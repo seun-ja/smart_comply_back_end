@@ -1,15 +1,12 @@
 from alerts.models import AlertSeverity
 
-from .base import Rule
-from .base import RuleResult
+from .base import Rule, RuleResult
 
 
 class HighRiskCustomerRule(Rule):
-
     def evaluate(self, transaction):
 
         if not transaction.customer.is_high_risk:
-
             return RuleResult(
                 False,
                 0,

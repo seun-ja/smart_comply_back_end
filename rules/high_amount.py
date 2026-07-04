@@ -1,17 +1,14 @@
 from alerts.models import AlertSeverity
 
-from .base import Rule
-from .base import RuleResult
+from .base import Rule, RuleResult
 
 
 class HighAmountRule(Rule):
-
     LIMIT = 10000
 
     def evaluate(self, transaction):
 
         if transaction.amount <= self.LIMIT:
-
             return RuleResult(
                 triggered=False,
                 score=0,

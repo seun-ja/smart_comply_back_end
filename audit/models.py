@@ -11,7 +11,6 @@ class AuditAction(models.TextChoices):
 
 
 class AuditLog(BaseModel):
-
     transaction = models.ForeignKey(
         Transaction,
         on_delete=models.CASCADE,

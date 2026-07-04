@@ -5,7 +5,6 @@ from .models import AuditLog
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-
     list_display = (
         "transaction",
         "action",
@@ -18,6 +17,4 @@ class AuditLogAdmin(admin.ModelAdmin):
         "actor",
     )
 
-    search_fields = (
-        "transaction__reference",
-    )
+    search_fields = ("transaction__reference",)

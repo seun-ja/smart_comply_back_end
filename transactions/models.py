@@ -19,7 +19,6 @@ class TransactionType(models.TextChoices):
 
 
 class Transaction(BaseModel):
-
     reference = models.CharField(
         max_length=40,
         unique=True,
@@ -72,9 +71,7 @@ class Transaction(BaseModel):
     def save(self, *args, **kwargs):
 
         if not self.reference:
-            self.reference = (
-                f"TXN-{uuid.uuid4().hex[:12].upper()}"
-            )
+            self.reference = f"TXN-{uuid.uuid4().hex[:12].upper()}"
 
         super().save(*args, **kwargs)
 

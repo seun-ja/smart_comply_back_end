@@ -1,6 +1,5 @@
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
 
 from pythonjsonlogger import jsonlogger
 

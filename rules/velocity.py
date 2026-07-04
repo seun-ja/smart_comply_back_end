@@ -3,15 +3,12 @@ from datetime import timedelta
 from django.utils import timezone
 
 from alerts.models import AlertSeverity
-
 from transactions.models import Transaction
 
-from .base import Rule
-from .base import RuleResult
+from .base import Rule, RuleResult
 
 
 class VelocityRule(Rule):
-
     def evaluate(self, transaction):
 
         last_hour = timezone.now() - timedelta(hours=1)
@@ -22,7 +19,6 @@ class VelocityRule(Rule):
         ).count()
 
         if count <= 5:
-
             return RuleResult(
                 False,
                 0,

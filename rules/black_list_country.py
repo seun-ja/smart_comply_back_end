@@ -1,8 +1,6 @@
 from alerts.models import AlertSeverity
 
-from .base import Rule
-from .base import RuleResult
-
+from .base import Rule, RuleResult
 
 BLACKLIST = {
     "KP",
@@ -10,12 +8,11 @@ BLACKLIST = {
     "SY",
 }
 
-class BlacklistedCountryRule(Rule):
 
+class BlacklistedCountryRule(Rule):
     def evaluate(self, transaction):
 
         if transaction.customer.country not in BLACKLIST:
-
             return RuleResult(
                 False,
                 0,

@@ -5,7 +5,6 @@ from .models import Alert
 
 @admin.register(Alert)
 class AlertAdmin(admin.ModelAdmin):
-
     list_display = (
         "transaction",
         "rule_name",

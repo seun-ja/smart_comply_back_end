@@ -5,22 +5,16 @@ from customers.models import Customer
 from .models import Transaction
 
 
-class TransactionSerializer(
-    serializers.ModelSerializer
-):
-
+class TransactionSerializer(serializers.ModelSerializer):
     customer_id = serializers.PrimaryKeyRelatedField(
         queryset=Customer.objects.all(),
         source="customer",
         write_only=True,
     )
 
-    customer = serializers.StringRelatedField(
-        read_only=True
-    )
+    customer = serializers.StringRelatedField(read_only=True)
 
     class Meta:
-
         model = Transaction
 
         fields = [
@@ -48,8 +42,6 @@ class TransactionSerializer(
     def validate_amount(self, value):
 
         if value <= 0:
-            raise serializers.ValidationError(
-                "Amount must be greater than zero."
-            )
+            raise serializers.ValidationError("Amount must be greater than zero.")
 
         return value

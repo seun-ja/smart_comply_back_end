@@ -4,7 +4,6 @@ from .models import AuditLog
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
-
     transaction_reference = serializers.CharField(
         source="transaction.reference",
         read_only=True,
