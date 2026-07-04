@@ -3,8 +3,10 @@ from rest_framework import filters, status
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from transactions.selectors import transaction_detail
+
 from .models import Transaction
-from .serializers import TransactionSerializer
+from .serializers import TransactionDetailSerializer, TransactionSerializer
 from .services import TransactionService
 
 
@@ -63,6 +65,12 @@ class TransactionViewSet(ModelViewSet):
             serializer.validated_data,
         )
 
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return TransactionDetailSerializer
+
+        return TransactionSerializer
+
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -71,3 +79,10 @@ class TransactionViewSet(ModelViewSet):
             queryset = queryset.filter(status=status)
 
         return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        transaction = transaction_detail(kwargs["pk"])
+
+        serializer = self.get_serializer(transaction)
+
+        return Response(serializer.data)

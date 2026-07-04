@@ -16,3 +16,11 @@ class TransactionSelector:
     def by_id(pk):
 
         return Transaction.objects.select_related("customer").get(pk=pk)
+
+
+def transaction_detail(pk):
+    return (
+        Transaction.objects.select_related("customer")
+        .prefetch_related("alerts", "audit_logs")
+        .get(pk=pk)
+    )
