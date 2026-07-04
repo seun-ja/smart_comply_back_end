@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 @dataclass
 class RuleResult:
-
     triggered: bool
 
     score: int
@@ -16,7 +15,5 @@ class RuleResult:
 
 
 class Rule:
-
     def evaluate(self, transaction):
-
         raise NotImplementedError

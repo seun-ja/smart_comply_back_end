@@ -3,9 +3,8 @@ from audit.models import (
     AuditAction,
     AuditLog,
 )
+from rules.engine import evaluate_transaction
 from transactions.models import Transaction
-
-from .engine import RuleEngine
 
 
 class RiskAnalysisService:
@@ -16,9 +15,7 @@ class RiskAnalysisService:
             id=transaction_id
         )
 
-        engine = RuleEngine()
-
-        results, score = engine.evaluate(transaction)
+        results, score = evaluate_transaction(transaction)
 
         transaction.risk_score = score
 
@@ -30,17 +27,18 @@ class RiskAnalysisService:
 
         customer = transaction.customer
 
-        if score >= 80 and not customer.is_high_risk:
+        if not customer.is_high_risk and score >= 80:
             customer.is_high_risk = True
             customer.save(update_fields=["is_high_risk"])
 
         for result in results:
-            Alert.objects.create(
-                transaction=transaction,
-                rule_name=result.rule_name,
-                severity=result.severity,
-                message=result.message,
-            )
+            if result.triggered:
+                Alert.objects.create(
+                    transaction=transaction,
+                    rule_name=result.rule_name,
+                    severity=result.severity,
+                    message=result.message,
+                )
 
         AuditLog.objects.create(
             transaction=transaction,
@@ -48,6 +46,6 @@ class RiskAnalysisService:
             actor="SYSTEM",
             details={
                 "risk_score": score,
-                "rules": [r.rule_name for r in results],
+                "rules": [r.rule_name for r in results if r.triggered],
             },
         )

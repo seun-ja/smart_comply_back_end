@@ -1,30 +1,34 @@
+import logging
+
+from transactions.models import Transaction
+
 from .registry import discover_rules
 
 
-class RuleEngine:
+def evaluate_transaction(transaction: Transaction):
+    """
+    Executes all registered compliance rules against a transaction.
 
-    def __init__(self):
+    Returns:
+        tuple[list[RuleResult], int]
+    """
 
-        self.rules = discover_rules()
+    results = []
 
-    def evaluate(
-        self,
-        transaction,
-    ):
+    for rule_cls in discover_rules():
+        rule = rule_cls()
 
-        alerts = []
-
-        score = 0
-
-        for rule in self.rules:
-
+        try:
             result = rule.evaluate(transaction)
+            results.append(result)
 
-            if not result.triggered:
-                continue
+        except Exception:
+            logging.exception(
+                "Rule %s failed while evaluating transaction %s",
+                rule_cls.__name__,
+                transaction.id,
+            )
 
-            alerts.append(result)
+    score = sum(result.score for result in results)
 
-            score += result.score
-
-        return alerts, score
+    return results, score

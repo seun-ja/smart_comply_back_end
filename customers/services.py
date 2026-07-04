@@ -2,7 +2,6 @@ from .models import Customer
 
 
 class CustomerService:
-
     @staticmethod
     def create(data):
 
