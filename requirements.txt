@@ -23,3 +23,5 @@ python-json-logger
 factory-boy
 
 django-cors-headers
+
+pytest-django

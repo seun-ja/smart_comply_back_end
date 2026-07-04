@@ -1,5 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
+from rest_framework import filters, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import Alert
@@ -37,3 +39,14 @@ class AlertViewSet(ReadOnlyModelViewSet):
         "created_at",
         "severity",
     ]
+
+    @action(detail=True, methods=["post"])
+    def resolve(self, request, pk=None):
+        alert = self.get_object()
+        alert.is_resolved = True
+        alert.save(update_fields=["is_resolved"])
+
+        return Response(
+            AlertSerializer(alert).data,
+            status=status.HTTP_200_OK,
+        )
