@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / lint files
+__pycache__/
+*.py[cd]
+*$py.exec_bytecode
+
+# Virtualenv
+.venv
+venv
+ENV
+bin/
+include/
+lib/
+share/
+bin/
+develop-eggs/
+pip-memory/
+.python-version
+
+# Static files
+staticfiles/
+media/
+
+# Environment variables
+.env
+.venv
+env/
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
