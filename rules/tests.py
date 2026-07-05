@@ -169,7 +169,8 @@ class EngineTest(TestCase):
 
     @patch("rules.engine.discover_rules")
     def test_evaluate_transaction_multiple_triggered(self, mock_discover):
-        """Test that multiple rules can be triggered simultaneously and their scores are summed correctly."""
+        """Test that multiple rules can be triggered simultaneously
+        and their scores are summed correctly."""
 
         # Mocking rule classes
         class MockRule1(object):
@@ -190,7 +191,8 @@ class EngineTest(TestCase):
 
     @patch("rules.engine.discover_rules")
     def test_evaluate_transaction_with_error(self, mock_discover):
-        """Test that if a single rule fails (raises an exception), the engine catches it, logs the error, and continues to other rules."""
+        """Test that if a single rule fails (raises an exception),
+        the engine catches it, logs the error, and continues to other rules."""
 
         class FailingRule:
             def evaluate(self, transaction):
