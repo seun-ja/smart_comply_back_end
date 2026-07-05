@@ -53,7 +53,13 @@ LOCAL_APPS = [
     "audit",
     "rules",
     "common",
+    "worker",
 ]
+
+TRANSACTION_STREAM_NAME = os.getenv(
+    "TRANSACTION_STREAM_NAME",
+    "transaction-events",
+)
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

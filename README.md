@@ -133,6 +133,119 @@ http://127.0.0.1:8000/
 
 ---
 
+# Docker
+
+The backend includes a production-ready multi-stage Dockerfile and a Docker Compose configuration for local development.
+
+## Prerequisites
+
+- Docker
+- Docker Compose
+
+## Build and Start
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- Django API
+- PostgreSQL
+- Redis
+
+The API will be available at:
+
+```
+http://localhost:8000
+```
+
+---
+
+## Run in Detached Mode
+
+```bash
+docker compose up -d
+```
+
+---
+
+## Stop Containers
+
+```bash
+docker compose down
+```
+
+---
+
+## Remove Volumes
+
+```bash
+docker compose down -v
+```
+
+---
+
+## View Logs
+
+```bash
+docker compose logs -f
+```
+
+For a specific service:
+
+```bash
+docker compose logs -f web
+```
+
+---
+
+## Run Management Commands
+
+Create a superuser:
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+Open a Django shell:
+
+```bash
+docker compose exec web python manage.py shell
+```
+
+Run tests:
+
+```bash
+docker compose exec web pytest
+```
+
+Run migrations manually:
+
+```bash
+docker compose exec web python manage.py migrate
+```
+
+---
+
+## Docker Services
+
+| Service | Description |
+|----------|-------------|
+| **web** | Django application served with Gunicorn |
+| **db** | PostgreSQL database |
+| **redis** | Redis cache and message broker |
+
+The Docker entrypoint automatically:
+
+1. Applies database migrations.
+2. Collects static files.
+3. Starts Gunicorn.
+
+This allows the application to be started with a single `docker compose up` command.
+
+---
+
 ## API Documentation
 
 Swagger
@@ -272,7 +385,7 @@ New rules can be added by simply implementing the `Rule` interface without modif
 
 ---
 
-# Design Decisions
+## Design Decisions
 
 ## Service Layer
 

@@ -5,7 +5,7 @@ from django.db import transaction as db_transaction
 from alerts.models import Alert
 from audit.models import AuditAction, AuditLog
 from rules.engine import evaluate_transaction
-from worker.publisher import EventPublisher
+from worker.management.commands.publisher import EventPublisher
 
 from .models import Transaction
 
@@ -18,10 +18,7 @@ class TransactionService:
         transaction = Transaction.objects.create(**validated_data)
 
         # Run all compliance rules
-        results = evaluate_transaction(transaction)
-
-        # Calculate overall risk score
-        score = sum(result.score for result in results)
+        results, score = evaluate_transaction(transaction)
 
         transaction.risk_score = score
         transaction.save(update_fields=["risk_score"])

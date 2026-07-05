@@ -26,6 +26,6 @@ def discover_rules():
             inspect.isclass,
         ):
             if issubclass(cls, Rule) and cls is not Rule:
-                rules.append(cls())
+                rules.append(cls)
 
     return rules

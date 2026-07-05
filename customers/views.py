@@ -3,7 +3,7 @@ from rest_framework import filters
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Customer
-from .serializers import CustomerSerializer
+from .serializers import CustomerDetailSerializer, CustomerSerializer
 
 
 class CustomerViewSet(ModelViewSet):
@@ -32,3 +32,9 @@ class CustomerViewSet(ModelViewSet):
         "created_at",
         "first_name",
     ]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return CustomerDetailSerializer
+
+        return CustomerSerializer

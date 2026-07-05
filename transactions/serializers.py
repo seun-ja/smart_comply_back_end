@@ -1,9 +1,7 @@
 from rest_framework import serializers
 
-from alerts.serializers import AlertSerializer
-from audit.serializers import AuditLogSerializer
 from customers.models import Customer
-from customers.serializers import CustomerSerializer
+from customers.serializers import CustomerSummarySerializer
 
 from .models import Transaction
 
@@ -51,23 +49,26 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 
 class TransactionDetailSerializer(serializers.ModelSerializer):
-    customer = CustomerSerializer(read_only=True)
-    alerts = AlertSerializer(many=True, read_only=True)
-    audit_logs = AuditLogSerializer(many=True, read_only=True)
+    customer = CustomerSummarySerializer(read_only=True)
+    alerts = serializers.SerializerMethodField()
+    audit_logs = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
+        fields = "__all__"
 
-        fields = (
-            "id",
-            "amount",
-            "currency",
-            "transaction_type",
-            "status",
-            "risk_score",
-            "created_at",
-            "updated_at",
-            "customer",
-            "alerts",
-            "audit_logs",
-        )
+    def get_alerts(self, obj):
+        from alerts.serializers import AlertSerializer
+
+        return AlertSerializer(
+            obj.alerts.all(),
+            many=True,
+        ).data
+
+    def get_audit_logs(self, obj):
+        from audit.serializers import AuditLogSerializer
+
+        return AuditLogSerializer(
+            obj.audit_logs.all(),
+            many=True,
+        ).data

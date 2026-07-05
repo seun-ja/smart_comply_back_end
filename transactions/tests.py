@@ -44,7 +44,10 @@ class TestTransactionService:
     ):
         customer = self.make_customer()
 
-        mock_evaluate.return_value = []
+        mock_evaluate.return_value = (
+            [],
+            0,
+        )
 
         transaction = TransactionService.create(self.make_payload(customer))
 
@@ -75,7 +78,7 @@ class TestTransactionService:
     ):
         customer = self.make_customer()
 
-        mock_evaluate.return_value = [
+        results = [
             RuleResult(
                 triggered=True,
                 score=85,
@@ -84,6 +87,11 @@ class TestTransactionService:
                 rule_name="HighAmountRule",
             )
         ]
+
+        mock_evaluate.return_value = (
+            results,
+            85,
+        )
 
         transaction = TransactionService.create(
             self.make_payload(customer, Decimal("10000"))
@@ -118,7 +126,7 @@ class TestTransactionService:
     ):
         customer = self.make_customer()
 
-        mock_evaluate.return_value = [
+        results = [
             RuleResult(
                 triggered=False,
                 score=0,
@@ -135,11 +143,27 @@ class TestTransactionService:
             ),
         ]
 
+        mock_evaluate.return_value = (
+            results,
+            20,
+        )
+
         transaction = TransactionService.create(self.make_payload(customer))
 
         assert transaction.risk_score == 20
 
         mock_alert_create.assert_called_once()
+
+        mock_alert_create.assert_called_with(
+            transaction=transaction,
+            rule_name="RuleTwo",
+            severity="LOW",
+            message="Triggered",
+        )
+
+        mock_audit_create.assert_called()
+
+        mock_publish.assert_called_once_with(transaction)
 
     @patch("transactions.services.EventPublisher.transaction_created")
     @patch("transactions.services.AuditLog.objects.create")
@@ -156,7 +180,7 @@ class TestTransactionService:
         customer.is_high_risk = True
         customer.save()
 
-        mock_evaluate.return_value = [
+        results = [
             RuleResult(
                 triggered=True,
                 score=95,
@@ -165,6 +189,8 @@ class TestTransactionService:
                 rule_name="Rule",
             )
         ]
+
+        mock_evaluate.return_value = (results, 95)
 
         with patch.object(customer, "save") as mock_save:
             TransactionService.create(self.make_payload(customer, Decimal("15000")))
@@ -232,7 +258,10 @@ def test_create_transaction_low_risk(
     mock_publish,
     customer,
 ):
-    mock_evaluate.return_value = []
+    mock_evaluate.return_value = (
+        [],
+        0,
+    )
 
     tx = TransactionService.create(
         {
@@ -267,7 +296,7 @@ def test_create_transaction_high_risk(
     mock_publish,
     customer,
 ):
-    mock_evaluate.return_value = [
+    results = [
         RuleResult(
             triggered=True,
             score=90,
@@ -276,6 +305,8 @@ def test_create_transaction_high_risk(
             rule_name="HighAmountRule",
         )
     ]
+
+    mock_evaluate.return_value = (results, 90)
 
     tx = TransactionService.create(
         {
@@ -322,7 +353,7 @@ def test_existing_high_risk_customer_not_updated(
         is_high_risk=True,
     )
 
-    mock_evaluate.return_value = [
+    results = [
         RuleResult(
             triggered=True,
             score=95,
@@ -331,6 +362,8 @@ def test_existing_high_risk_customer_not_updated(
             rule_name="RuleA",
         )
     ]
+
+    mock_evaluate.return_value = (results, 95)
 
     tx = TransactionService.create(
         {
@@ -398,11 +431,13 @@ def test_multiple_rules_accumulate_score(
     mock_publish,
     customer,
 ):
-    mock_evaluate.return_value = [
+    results = [
         RuleResult(True, 30, "MEDIUM", "Rule A", "RuleA"),
         RuleResult(True, 60, "HIGH", "Rule B", "RuleB"),
         RuleResult(False, 0, "", "", "RuleC"),
     ]
+
+    mock_evaluate.return_value = (results, 90)
 
     tx = TransactionService.create(
         {
