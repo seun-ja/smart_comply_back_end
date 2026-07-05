@@ -41,6 +41,7 @@ class CustomerSummarySerializer(serializers.ModelSerializer):
             "id",
             "first_name",
             "last_name",
+            "country",
             "email",
             "is_high_risk",
         ]

@@ -19,6 +19,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "--customers",
+            type=int,
+            default=10,
+            help="Number of customers to generate",
+        )
+
+        parser.add_argument(
             "--transactions",
             type=int,
             default=100,
@@ -29,8 +36,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("🌱 Seeding database..."))
 
         self.create_admin()
-        customers = self.create_customers()
         count = options["transactions"]
+        customers = self.create_customers(count)
         self.create_transactions(customers, count)
 
         self.stdout.write(self.style.SUCCESS("✅ Database seeded successfully."))
@@ -47,29 +54,18 @@ class Command(BaseCommand):
 
         self.stdout.write("Created admin user")
 
-    def create_customers(self):
+    def create_customers(self, count):
+        countries = ["NG", "US", "GB", "CA", "ZA", "FR", "AE", "SG", "KR"]
+
         customers = []
 
-        data = [
-            ("Joshua", "Aminu", "joshua@example.com", "NG"),
-            ("John", "Doe", "john@example.com", "US"),
-            ("Jane", "Smith", "jane@example.com", "GB"),
-            ("Alice", "Brown", "alice@example.com", "CA"),
-            ("David", "Wilson", "david@example.com", "ZA"),
-            ("Fatima", "Ahmed", "fatima@example.com", "AE"),
-            ("Michael", "Johnson", "michael@example.com", "FR"),
-            ("Grace", "Okafor", "grace@example.com", "NG"),
-            ("Daniel", "Lee", "daniel@example.com", "SG"),
-            ("Sarah", "Kim", "sarah@example.com", "KR"),
-        ]
-
-        for first, last, email, country in data:
+        for i in range(count):
             customer, _ = Customer.objects.get_or_create(
-                email=email,
+                email=f"customer{i + 1}@example.com",
                 defaults={
-                    "first_name": first,
-                    "last_name": last,
-                    "country": country,
+                    "first_name": f"Customer{i + 1}",
+                    "last_name": "User",
+                    "country": random.choice(countries),
                 },
             )
 

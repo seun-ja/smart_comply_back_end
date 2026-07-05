@@ -17,6 +17,8 @@ redis_client = redis.Redis(
 )
 
 STREAM_NAME = "transaction-events"
+GROUP_NAME = "transactions_group"
+CONSUMER_NAME = "worker_1"
 
 
 class Command(BaseCommand):
@@ -26,19 +28,24 @@ class Command(BaseCommand):
 
         logging.info("Worker started. Waiting for transaction events...")
 
-        last_id = "0"
+        # Ensure the consumer group exists
+        try:
+            redis_client.xgroup_create(STREAM_NAME, GROUP_NAME, id=">", mkstream=True)
+        except redis.exceptions.ResponseError as e:
+            if "Already exists" not in str(e):
+                raise
 
         while True:
-            response = redis_client.xread(
-                {STREAM_NAME: last_id},
+            response = redis_client.xreadgroup(
+                groupname=GROUP_NAME,
+                consumername=CONSUMER_NAME,
+                streams={STREAM_NAME: ">"},
                 block=0,
             )
 
             for _, events in response:
                 for event_id, data in events:
                     try:
-                        last_id = event_id
-
                         event = data["event"]
                         payload = json.loads(data["payload"])
 
@@ -54,6 +61,9 @@ class Command(BaseCommand):
                                 "Completed transaction %s",
                                 payload["transaction_id"],
                             )
+
+                        # Acknowledge the message after successful processing
+                        redis_client.xack(STREAM_NAME, GROUP_NAME, event_id)
 
                     except Exception:
                         logger.exception("Failed processing event %s", event_id)
