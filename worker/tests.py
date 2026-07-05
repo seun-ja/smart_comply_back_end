@@ -43,32 +43,26 @@ class TestWorker(TestCase):
     @patch("rules.services.RiskAnalysisService.process")
     def test_consumer_processes_event(self, mock_process, mock_redis):
         """Test that the consumer correctly processes a 'transaction.created' event."""
-        # Setup mock data for one valid event using a real UUID
         mock_id = str(uuid.uuid4())
         mock_event = {
             "event": "transaction.created",
             "payload": json.dumps({"transaction_id": mock_id}),
         }
 
-        # Mock xreadgroup to return the event once, then raise an exception to break the 'while True' loop
         mock_redis.xreadgroup.side_effect = [
             [("consumer_1", [("event_id_1", mock_event)])],
             Exception("Break Loop"),
         ]
 
-        # We also need to mock xack (acknowledge)
         mock_redis.xack.return_value = True
 
-        # Execute the command handle and catch the expected exception that breaks the loop
         with self.assertRaises(Exception) as cm:
             command = Command()
             command.handle()
 
         self.assertEqual(str(cm.exception), "Break Loop")
 
-        # Verify that the process method was called with the correct ID
         mock_process.assert_called_once_with(mock_id)
-        # Verify xack was called for the event_id
         mock_redis.xack.assert_called_with(
             "transaction-events", "transactions_group", "event_id_1"
         )
