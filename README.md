@@ -1,37 +1,40 @@
 # SmartComply Backend
 
-SmartComply is a transaction monitoring and compliance platform that evaluates financial transactions against configurable risk rules. The system assigns a risk score, generates compliance alerts, records audit logs, and classifies customers as high risk based on observed transaction behaviour rather than user-provided input.
+SmartComply is a transaction monitoring and compliance platform that evaluates financial transactions against configurable risk rules. The system assigns a cumulative risk score, generates compliance alerts, records audit logs, and automatically classifies customers as high risk based on transaction behaviour. Compliance processing is performed asynchronously using Redis Streams and a background worker.
 
 ---
 
 # Features
 
-* JWT authentication using Simple JWT
-* Customer management
-* Transaction processing
-* Rule-based compliance engine
-* Automatic risk scoring
-* Automatic customer risk classification
-* Alert generation
-* Audit logging
-* OpenAPI documentation with DRF Spectacular
-* Unit and integration tests using Pytest
+- JWT authentication using Simple JWT
+- Customer management
+- Transaction processing
+- Rule-based compliance engine
+- Automatic risk scoring
+- Automatic customer risk classification
+- Alert generation
+- Audit logging
+- Asynchronous event processing using Redis Streams
+- Background worker for compliance evaluation
+- Database seed command for generating sample data
+- OpenAPI documentation with DRF Spectacular
+- Unit and integration tests using Pytest
 
 ---
 
 # Technology Stack
 
-| Component         | Technology            |
-| ----------------- | --------------------- |
-| Framework         | Django 5              |
-| API               | Django REST Framework |
-| Authentication    | Simple JWT            |
-| Database          | PostgreSQL            |
-| Message Broker    | Redis                 |
-| Event Processing  | Kafka                 |
-| API Documentation | DRF Spectacular       |
-| Testing           | Pytest                |
-| Production Server | Gunicorn              |
+| Component | Technology |
+|-----------|------------|
+| Framework | Django 5 |
+| API | Django REST Framework |
+| Authentication | Simple JWT |
+| Database | PostgreSQL |
+| Cache & Event Streaming | Redis (Redis Streams) |
+| Background Processing | Django Management Commands |
+| API Documentation | DRF Spectacular |
+| Testing | Pytest |
+| Production Server | Gunicorn |
 
 ---
 
@@ -41,10 +44,11 @@ SmartComply is a transaction monitoring and compliance platform that evaluates f
 
 Install the following software before running the project.
 
-* Python 3.12+
-* PostgreSQL
-* Redis
-* Kafka (for event publishing)
+- Python 3.12+
+- PostgreSQL
+- Redis
+- Docker (optional)
+- Docker Compose (optional)
 
 ---
 
@@ -97,8 +101,6 @@ DB_PORT=5432
 
 REDIS_HOST=localhost
 REDIS_PORT=6379
-
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 ```
 
 ---
@@ -107,6 +109,22 @@ KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
 ```bash
 python manage.py migrate
+```
+
+---
+
+## Seed Sample Data
+
+Populate the database with customers and transactions for local development.
+
+```bash
+python manage.py seed
+```
+
+You can optionally specify the number of customers and transactions.
+
+```bash
+python manage.py seed --customers 20 --transactions 200
 ```
 
 ---
@@ -125,7 +143,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-The API is available at
+The API will be available at
 
 ```
 http://127.0.0.1:8000/
@@ -133,14 +151,29 @@ http://127.0.0.1:8000/
 
 ---
 
+# Running the Background Worker
+
+Compliance processing is handled asynchronously by a Redis Streams consumer.
+
+Start the worker using:
+
+```bash
+python manage.py consumer
+```
+
+The worker continuously listens for newly created transaction events and performs:
+
+- Rule evaluation
+- Risk score calculation
+- Alert generation
+- Audit logging
+- Customer risk classification
+
+---
+
 # Docker
 
-The backend includes a production-ready multi-stage Dockerfile and a Docker Compose configuration for local development.
-
-## Prerequisites
-
-- Docker
-- Docker Compose
+The backend includes a production-ready multi-stage Dockerfile together with Docker Compose for local development.
 
 ## Build and Start
 
@@ -154,7 +187,7 @@ This starts:
 - PostgreSQL
 - Redis
 
-The API will be available at:
+The API will be available at
 
 ```
 http://localhost:8000
@@ -200,27 +233,43 @@ docker compose logs -f web
 
 ---
 
+## Running the Worker in Docker
+
+Start the worker inside the application container.
+
+```bash
+docker compose exec web python manage.py consumer
+```
+
+---
+
 ## Run Management Commands
 
-Create a superuser:
+Create a superuser
 
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
 
-Open a Django shell:
+Seed sample data
+
+```bash
+docker compose exec web python manage.py seed
+```
+
+Open a Django shell
 
 ```bash
 docker compose exec web python manage.py shell
 ```
 
-Run tests:
+Run tests
 
 ```bash
 docker compose exec web pytest
 ```
 
-Run migrations manually:
+Apply migrations
 
 ```bash
 docker compose exec web python manage.py migrate
@@ -232,9 +281,9 @@ docker compose exec web python manage.py migrate
 
 | Service | Description |
 |----------|-------------|
-| **web** | Django application served with Gunicorn |
-| **db** | PostgreSQL database |
-| **redis** | Redis cache and message broker |
+| web | Django application served with Gunicorn |
+| db | PostgreSQL database |
+| redis | Redis cache and Redis Streams |
 
 The Docker entrypoint automatically:
 
@@ -242,13 +291,11 @@ The Docker entrypoint automatically:
 2. Collects static files.
 3. Starts Gunicorn.
 
-This allows the application to be started with a single `docker compose up` command.
-
 ---
 
-## API Documentation
+# API Documentation
 
-Swagger
+Swagger UI
 
 ```
 http://127.0.0.1:8000/api/schema/swagger-ui/
@@ -264,13 +311,13 @@ http://127.0.0.1:8000/api/schema/
 
 # Running Tests
 
-Run all tests
+Run the complete test suite
 
 ```bash
 pytest
 ```
 
-Run a specific module
+Run a module
 
 ```bash
 pytest transactions/tests.py
@@ -304,88 +351,100 @@ backend/
 
 ### Module Responsibilities
 
-| Module         | Responsibility                                   |
-| -------------- | ------------------------------------------------ |
-| authentication | JWT authentication                               |
-| customers      | Customer management                              |
-| transactions   | Transaction CRUD and processing                  |
-| rules          | Compliance rule engine                           |
-| alerts         | Generated compliance alerts                      |
-| audit          | Immutable audit trail                            |
-| dashboard      | Aggregated statistics                            |
-| common         | Shared models and utilities                      |
-| worker         | Kafka event publishing and background processing |
-| config         | Django configuration                             |
+| Module | Responsibility |
+|----------|---------------|
+| authentication | JWT authentication |
+| customers | Customer management |
+| transactions | Transaction CRUD and event publishing |
+| rules | Compliance rule engine |
+| alerts | Compliance alerts |
+| audit | Audit trail |
+| dashboard | Dashboard statistics |
+| common | Shared models and utilities |
+| worker | Redis Streams consumer |
+| config | Django configuration |
 
 ---
 
 # Architecture Overview
 
-The application follows a layered architecture to separate responsibilities.
+The application follows a layered architecture that separates API concerns from business logic and asynchronous processing.
 
 ```
-             Client
-                │
-                ▼
-        Django REST Views
-                │
-                ▼
-        Serializers (Validation)
-                │
-                ▼
-      Service Layer (Business Logic)
-                │
-        ┌───────┴────────┐
-        ▼                ▼
- Rule Engine        Database
+                 Client
+                    │
+                    ▼
+            Django REST API
+                    │
+                    ▼
+          Serializer Validation
+                    │
+                    ▼
+          Transaction Service
+                    │
+                    ▼
+         Persist Transaction
+                    │
+                    ▼
+       Publish Redis Stream Event
+                    │
+                    ▼
+             Redis Streams
+                    │
+                    ▼
+          Background Worker
+                    │
+                    ▼
+             Rule Engine
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+     Alerts               Audit Logs
         │
         ▼
- Risk Score
-        │
-        ▼
- Alerts + Audit Logs
-        │
-        ▼
- Kafka Event Publisher
+Customer Risk Classification
 ```
 
-### Request Flow
+---
+
+## Request Flow
 
 1. Client submits a transaction.
-2. Serializer validates incoming data.
-3. TransactionService persists the transaction.
-4. The Rule Engine evaluates every registered rule.
-5. A cumulative risk score is calculated.
-6. Triggered rules generate alerts.
-7. Audit logs are written.
-8. Customers exceeding the configured threshold are automatically classified as high risk.
-9. A Kafka event is published for downstream consumers.
+2. The serializer validates the request.
+3. The transaction is persisted.
+4. A `transaction.created` event is published to Redis Streams.
+5. The background worker consumes the event.
+6. Registered compliance rules are evaluated.
+7. A cumulative risk score is calculated.
+8. Alerts are generated for triggered rules.
+9. Audit logs are written.
+10. Customers exceeding the configured threshold are automatically marked as high risk.
 
 ---
 
 # Rule Engine
 
-The compliance engine discovers registered rules dynamically.
+The compliance engine discovers registered rules dynamically at runtime.
 
 Each rule returns:
 
-* Whether it triggered
-* Risk score contribution
-* Severity
-* Alert message
+- Whether it triggered
+- Risk score contribution
+- Severity
+- Alert message
 
 Example rules include:
 
-* High transaction amount
-* High-risk customer
-* Transaction velocity
-* Blacklisted country
+- High transaction amount
+- High-risk customer
+- Transaction velocity
+- Blacklisted country
 
-New rules can be added by simply implementing the `Rule` interface without modifying existing business logic.
+Adding new rules only requires implementing the `Rule` interface—no changes to existing business logic are required.
 
 ---
 
-## Design Decisions
+# Design Decisions
 
 ## Service Layer
 
@@ -393,10 +452,10 @@ Business logic is separated from API views.
 
 Benefits:
 
-* Easier testing
-* Reusable business logic
-* Thin controllers
-* Better maintainability
+- Easier testing
+- Reusable business logic
+- Thin controllers
+- Better maintainability
 
 ---
 
@@ -406,134 +465,145 @@ Rules are independent classes implementing a common interface.
 
 Benefits:
 
-* Open for extension
-* Easy to test individually
-* No large conditional blocks
-* Supports plug-and-play rules
+- Open for extension
+- Easy to test individually
+- Supports plug-and-play rules
+- Avoids large conditional statements
 
 ---
 
 ## Automatic Risk Classification
 
-Customers are **not allowed** to declare themselves as high risk.
+Customers cannot manually declare themselves high risk.
 
-Instead, the backend derives customer risk from transaction history and compliance rules.
+Risk status is determined entirely from transaction history and compliance rules.
 
-This prevents malicious users from manipulating their own risk profile.
+Benefits:
+
+- Prevents manipulation
+- Ensures consistent compliance decisions
+- Keeps business rules centralized
 
 ---
 
 ## Event-Driven Processing
 
-After successful transaction creation, an event is published to Kafka.
+Transaction creation publishes an event to Redis Streams.
+
+A dedicated background worker processes events independently from the API request lifecycle.
 
 Benefits:
 
-* Loose coupling
-* Easy integration with external systems
-* Future support for notifications, analytics and monitoring
+- Reduced request latency
+- Loose coupling
+- Better scalability
+- Easy future integration with notifications and analytics
 
 ---
 
 ## Audit Logging
 
-Every compliance evaluation generates an immutable audit record.
+Every compliance evaluation produces immutable audit records.
 
-This provides traceability and supports compliance investigations.
+Benefits:
+
+- Full traceability
+- Compliance reporting
+- Easier investigations
 
 ---
 
 # Trade-offs
 
-### Rule Evaluation is Synchronous
+## Asynchronous Rule Evaluation
 
-Rules currently execute during transaction creation.
+Compliance processing occurs after transaction creation.
 
 Advantages
 
-* Immediate response
-* Immediate risk score
-* Simpler implementation
+- Faster API responses
+- Better scalability
+- Easier background processing
 
 Disadvantages
 
-* Higher request latency
-* Less scalable under heavy load
-
-A production deployment could move rule evaluation entirely to background workers.
+- Risk score and alerts are not immediately available after transaction creation.
+- Additional infrastructure (Redis worker) is required.
 
 ---
 
-### High Risk Threshold
+## Threshold-Based Risk Classification
 
-Customers become high risk when the cumulative risk score reaches the configured threshold.
+Customers become high risk once they exceed a configured score threshold.
 
 Advantages
 
-* Simple
-* Easy to understand
+- Simple
+- Predictable
+- Easy to understand
 
 Disadvantages
 
-* Static thresholds may not adapt well to changing fraud patterns.
-
-Future versions could replace this with configurable thresholds or machine learning.
+- Static thresholds may not adapt to evolving fraud patterns.
 
 ---
 
-### Database-Centric Design
+## Database-Centric Audit Trail
 
-Risk scores, alerts and audit logs are persisted immediately.
+Alerts, risk scores and audit logs are persisted.
 
 Advantages
 
-* Consistent reporting
-* Easy querying
-* Historical tracking
+- Historical reporting
+- Compliance investigations
+- Easy querying
 
 Disadvantages
 
-* Increased write operations during transaction processing.
+- Increased write operations
 
 ---
 
 # Assumptions
 
-The implementation makes the following assumptions:
+The implementation assumes:
 
-* Customer email addresses are unique.
-* Transactions are immutable after completion except for administrative updates.
-* Every transaction belongs to exactly one customer.
-* Rule failures should not prevent transaction creation; failed rules are logged and remaining rules continue executing.
-* High-risk classification is determined only by backend business rules.
-* Kafka is available for event publishing in production.
-* Authentication is performed using JWT access and refresh tokens.
-* PostgreSQL is the primary production database.
+- Customer email addresses are unique.
+- Every transaction belongs to exactly one customer.
+- Transactions are immutable after completion except for administrative updates.
+- Redis is available for event streaming.
+- Authentication uses JWT access and refresh tokens.
+- PostgreSQL is the production database.
+- Compliance processing is eventually consistent due to asynchronous execution.
+- High-risk classification is determined exclusively by backend business rules.
 
 ---
 
 # Future Improvements
 
-* Configurable compliance rules from the admin dashboard
-* Rule weighting stored in the database
-* Machine learning fraud detection
-* Asynchronous rule execution
-* Email and SMS notifications
-* Alert assignment workflow
-* Customer risk history
-* Real-time dashboards using WebSockets or Server-Sent Events
-* Multi-tenant support
+- Redis consumer groups for horizontal scaling
+- Dead-letter queues and retry mechanisms
+- Configurable compliance rules from the admin dashboard
+- Rule weighting stored in the database
+- Email and SMS notifications
+- Alert assignment workflow
+- Customer risk history
+- Real-time dashboards using Server-Sent Events or WebSockets
+- Machine learning–based fraud detection
+- Multi-tenant support
 
 ---
 
 # Development Commands
 
-| Command                            | Description               |
-| ---------------------------------- | ------------------------- |
-| `python manage.py runserver`       | Start development server  |
-| `python manage.py migrate`         | Apply database migrations |
-| `python manage.py createsuperuser` | Create administrator      |
-| `python manage.py check`           | Run Django system checks  |
-| `pytest`                           | Run all tests             |
-| `pytest transactions/tests.py`     | Run transaction tests     |
-| `flake8 .`                         | Run linting               |
+| Command | Description |
+|----------|-------------|
+| `python manage.py runserver` | Start development server |
+| `python manage.py migrate` | Apply migrations |
+| `python manage.py seed` | Seed sample customers and transactions |
+| `python manage.py consumer` | Start Redis Streams worker |
+| `python manage.py createsuperuser` | Create administrator |
+| `python manage.py check` | Run Django system checks |
+| `pytest` | Run all tests |
+| `pytest transactions/tests.py` | Run transaction tests |
+| `flake8 .` | Run linting |
