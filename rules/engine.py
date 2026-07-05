@@ -4,6 +4,8 @@ from transactions.models import Transaction
 
 from .registry import discover_rules
 
+logger = logging.getLogger(__name__)
+
 
 def evaluate_transaction(transaction: Transaction):
     """
@@ -23,7 +25,7 @@ def evaluate_transaction(transaction: Transaction):
             results.append(result)
 
         except Exception:
-            logging.exception(
+            logger.exception(
                 "Rule %s failed while evaluating transaction %s",
                 rule_cls.__name__,
                 transaction.id,

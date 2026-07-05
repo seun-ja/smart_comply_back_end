@@ -2,9 +2,11 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from django.test import TestCase
 
 from customers.models import Customer
 from rules.base import RuleResult
+from transactions.selectors import TransactionSelector, transaction_detail
 
 from .models import Transaction, TransactionStatus, TransactionType
 from .services import TransactionService
@@ -457,3 +459,53 @@ def test_multiple_rules_accumulate_score(
     assert mock_alert.call_count == 2
     mock_audit.assert_called_once()
     mock_publish.assert_called_once_with(tx)
+
+
+class TestTransactionSelector(TestCase):
+    def setUp(self):
+        self.customer = Customer.objects.create(
+            first_name="Test",
+            last_name="User",
+            email="test@example.com",
+            country="US",
+        )
+        self.transaction = Transaction.objects.create(
+            customer=self.customer,
+            amount=Decimal("100.00"),
+            currency="USD",
+            transaction_type=TransactionType.DEPOSIT,
+            status=TransactionStatus.PENDING,
+        )
+
+    def test_all_returns_all_transactions(self):
+        """Test that all() returns all transactions with customer relations."""
+        transactions = TransactionSelector.all()
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual(transactions[0], self.transaction)
+
+    def test_by_reference(self):
+        """Test retrieving a transaction by its reference."""
+        tx = TransactionSelector.by_reference(self.transaction.reference)
+        self.assertEqual(tx, self.transaction)
+
+    def test_by_id(self):
+        """Test retrieving a transaction by its ID."""
+        tx = TransactionSelector.by_id(self.transaction.id)
+        self.assertEqual(tx, self.transaction)
+
+    def test_transaction_detail_prefetches_correctly(self):
+        """Test that transaction_detail includes prefetched alerts and audit logs."""
+        # Create an alert to ensure it's included in prefetch
+        from alerts.models import Alert
+
+        Alert.objects.create(
+            transaction=self.transaction,
+            rule_name="TestRule",
+            severity="LOW",
+            message="Test Message",
+        )
+
+        tx = transaction_detail(self.transaction.id)
+        self.assertEqual(tx, self.transaction)
+        # Check if prefetching worked (the attributes should be populated)
+        self.assertEqual(len(tx.alerts.all()), 1)
